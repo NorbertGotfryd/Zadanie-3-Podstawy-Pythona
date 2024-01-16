@@ -1,6 +1,24 @@
 import requests
 
-dupa = requests.get('https://api.nbp.pl/api/exchangerates/tables/a/?format=json')
+communication = requests.get('https://api.nbp.pl/api/exchangerates/tables/a/?format=json')
+response = communication.json()
 
-response = dupa.json()
-print(response)
+invoice_value = input("Podaj wartość faktury:\n")
+invoice_currency = input("Wybierz walutę z podanych:\nEUR\nUSD\nCZK\n")
+invoice_date = input("Podaj datę wystawienia (RRRR-MM-DD\n)")
+invoice = [invoice_value, invoice_currency, invoice_date]
+
+payment_value = input("Podaj wartość faktury:\n")
+payment_currency = input("Wybierz walutę z podanych:\nEUR\nUSD\nCZK\n")
+payment_date = input("Podaj datę wystawienia (RRRR-MM-DD\n)")
+payment = [payment_value, payment_currency, payment_date]
+
+currency = invoice_currency
+quantity = int(invoice_value)
+
+
+for rate in response[0]['rates']:
+    if currency == rate['code']:
+        result = quantity * float(rate['mid'])
+        print(f'Wartość faktury w PLN {result}.')
+        break
