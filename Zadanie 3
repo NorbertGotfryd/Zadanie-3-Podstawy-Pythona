@@ -1,9 +1,6 @@
 import requests
 import csv
 
-communication = requests.get('https://api.nbp.pl/api/exchangerates/tables/a/?format=json')
-response = communication.json()
-
 invoice_value = input("Podaj wartość faktury:\n")
 invoice_currency = input("Wybierz walutę z podanych:\nEUR\nUSD\nCZK\n")
 invoice_date = input("Podaj datę wystawienia (RRRR-MM-DD\n)")
@@ -24,13 +21,18 @@ with open('payments.txt', 'a', encoding='UTF8') as payment_file:
     writer.writerow(payment)
     payment_file.close()
 
-
 currency = invoice_currency
 quantity = int(invoice_value)
 
+communication = requests.get(f'http://api.nbp.pl/api/exchangerates/rates/c/{currency}/{invoice_date}/?format=json')
+response = communication.json()
 
-for rate in response[0]['rates']:
-    if currency == rate['code']:
-        result = quantity * float(rate['mid'])
-        print(f'Wartość faktury w PLN {result}.')
-        break
+result = response['rates'][0]['bid'] * quantity
+
+
+with open('payment_results.txt', 'a', encoding='UTF8') as results_file:
+            writer = csv.writer(results_file)
+            results_file.write(str(result))
+            results_file.close()
+
+print(f"wartośc faktury wynosi {invoice_value}, czyli {result} w {invoice_currency} - stan na dzień {invoice_date}")
