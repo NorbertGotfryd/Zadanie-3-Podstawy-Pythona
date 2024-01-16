@@ -1,0 +1,6 @@
+import requests
+
+dupa = requests.get('https://api.nbp.pl/api/exchangerates/tables/a/?format=json')
+
+response = dupa.json()
+print(response)
