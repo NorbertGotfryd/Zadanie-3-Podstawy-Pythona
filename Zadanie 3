@@ -1,4 +1,5 @@
 import requests
+import csv
 
 communication = requests.get('https://api.nbp.pl/api/exchangerates/tables/a/?format=json')
 response = communication.json()
@@ -8,10 +9,21 @@ invoice_currency = input("Wybierz walutę z podanych:\nEUR\nUSD\nCZK\n")
 invoice_date = input("Podaj datę wystawienia (RRRR-MM-DD\n)")
 invoice = [invoice_value, invoice_currency, invoice_date]
 
-payment_value = input("Podaj wartość faktury:\n")
+payment_value = input("Podaj wartość płatności:\n")
 payment_currency = input("Wybierz walutę z podanych:\nEUR\nUSD\nCZK\n")
-payment_date = input("Podaj datę wystawienia (RRRR-MM-DD\n)")
+payment_date = input("Podaj datę płatności (RRRR-MM-DD\n)")
 payment = [payment_value, payment_currency, payment_date]
+
+with open('invoices.txt', 'a', encoding='UTF8') as invoices_file:
+    writer = csv.writer(invoices_file)
+    writer.writerow(invoice)
+    invoices_file.close()
+
+with open('payments.txt', 'a', encoding='UTF8') as payment_file:
+    writer = csv.writer(payment_file)
+    writer.writerow(payment)
+    payment_file.close()
+
 
 currency = invoice_currency
 quantity = int(invoice_value)
