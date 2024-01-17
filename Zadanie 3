@@ -1,10 +1,9 @@
 #importy wymaganych bibliotek
 import requests
 import csv
-import json
+import datetime
 
 # wprowadzenie danych faktur
-
 while True:
     try:
         invoice_value = int(input("Podaj wartość faktury:\n"))
@@ -19,7 +18,14 @@ while True:
     else:
         continue
 
-invoice_date = input("Podaj datę wystawienia (RRRR-MM-DD\n)")
+while True:
+    try:
+        invoice_date = input("Podaj datę wystawienia (RRRR-MM-DD\n)")
+        datetime.date.fromisoformat(invoice_date)
+        break
+    except ValueError:
+        print("Nieprawidłowy format danych, proszę podać datę w formacie RRRR-MM-DD")
+
 invoice = [invoice_value, invoice_currency, invoice_date]
 
 # wprowadzenie danych płatności
@@ -29,8 +35,22 @@ while True:
         break
     except ValueError:
         print("[BŁĄD]  Proszę podać wartość w formacie liczbowym")
-payment_currency = input("Wybierz walutę z podanych:\nEUR\nUSD\nCZK\n")
-payment_date = input("Podaj datę płatności (RRRR-MM-DD\n)")
+
+while True:
+    payment_currency = input("Wybierz walutę z podanych:\nEUR\nUSD\nCZK\n")
+    if payment_currency == "EUR" or payment_currency == "USD" or payment_currency == "CZK":
+        break
+    else:
+        continue
+
+while True:
+    try:
+        payment_date = input("Podaj datę płatności (RRRR-MM-DD\n)")
+        datetime.date.fromisoformat(payment_date)
+        break
+    except ValueError:
+        print("Nieprawidłowy format danych, proszę podać datę w formacie RRRR-MM-DD")
+
 payment = [payment_value, payment_currency, payment_date]
 
 # zapis faktur do pliku txt
