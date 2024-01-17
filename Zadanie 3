@@ -1,15 +1,34 @@
 #importy wymaganych bibliotek
 import requests
 import csv
+import json
 
 # wprowadzenie danych faktur
-invoice_value = input("Podaj wartość faktury:\n")
-invoice_currency = input("Wybierz walutę z podanych:\nEUR\nUSD\nCZK\n")
+
+while True:
+    try:
+        invoice_value = int(input("Podaj wartość faktury:\n"))
+        break
+    except ValueError:
+        print("[BŁĄD] Proszę podać wartość w formacie liczbowym")
+
+while True:
+    invoice_currency = input("Wybierz walutę z podanych:\nEUR\nUSD\nCZK\n")
+    if invoice_currency == "EUR" or invoice_currency == "USD" or invoice_currency == "CZK":
+        break
+    else:
+        continue
+
 invoice_date = input("Podaj datę wystawienia (RRRR-MM-DD\n)")
 invoice = [invoice_value, invoice_currency, invoice_date]
 
 # wprowadzenie danych płatności
-payment_value = input("Podaj wartość płatności:\n")
+while True:
+    try:
+        payment_value = int(input("Podaj wartość płatności:\n"))
+        break
+    except ValueError:
+        print("[BŁĄD]  Proszę podać wartość w formacie liczbowym")
 payment_currency = input("Wybierz walutę z podanych:\nEUR\nUSD\nCZK\n")
 payment_date = input("Podaj datę płatności (RRRR-MM-DD\n)")
 payment = [payment_value, payment_currency, payment_date]
@@ -26,11 +45,11 @@ with open('payments.txt', 'a', encoding='UTF8') as payment_file:
     writer.writerow(payment)
     payment_file.close()
 
-currency = invoice_currency
+currency = payment_currency
 quantity = int(invoice_value)
 
 # komunikacja z API
-communication = requests.get(f'http://api.nbp.pl/api/exchangerates/rates/c/{currency}/{invoice_date}/?format=json')
+communication = requests.get(f'http://api.nbp.pl/api/exchangerates/rates/c/{payment_currency}/{payment_date}/?format=json')
 response = communication.json()
 result = response['rates'][0]['bid'] * quantity
 
@@ -42,8 +61,8 @@ with open('payment_results.txt', 'a', encoding='UTF8') as results_file:
 
 # wyświetlenie w terminalu informacji o statusie faktury
 if invoice_value == payment_value:
-    print(f"wartośc faktury wynosi {invoice_value}, czyli {result} w {invoice_currency} - stan na dzień {invoice_date} - Faktura została opłacona w całośći")
+    print(f"wartośc faktury wynosi {invoice_value}, czyli {result} w {payment_currency} - stan na dzień {invoice_date} - Faktura została opłacona w całośći")
 elif invoice_value < payment_value:
-    print(f"wartośc faktury wynosi {invoice_value}, czyli {result} w {invoice_currency} - stan na dzień {invoice_date} - zapłacone zostało {payment_value} z {invoice_value} wymaganych - nastąpiła nadpłata (wymagany zwrot w kwocie", int(payment_value) - int(invoice_value),")")
+    print(f"wartośc faktury wynosi {invoice_value}, czyli {result} w {payment_currency} - stan na dzień {invoice_date} - zapłacone zostało {payment_value} z {invoice_value} wymaganych - nastąpiła nadpłata (wymagany zwrot w kwocie", int(payment_value) - int(invoice_value),")")
 else:
-    print(f"wartośc faktury wynosi {invoice_value}, czyli {result} w {invoice_currency} - stan na dzień {invoice_date} - zapłacone zostało {payment_value} z {invoice_value} wymaganych - nastąpiła niedopłata (wymagana dopłata w kwocie", int(invoice_value) - int(invoice_value),")")
+    print(f"wartośc faktury wynosi {invoice_value}, czyli {result} w {payment_currency} - stan na dzień {invoice_date} - zapłacone zostało {payment_value} z {invoice_value} wymaganych - nastąpiła niedopłata (wymagana dopłata w kwocie", int(invoice_value) - int(invoice_value),")")
