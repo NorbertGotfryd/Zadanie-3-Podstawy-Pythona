@@ -3,10 +3,10 @@ import requests
 import csv
 import datetime
 
-# wprowadzenie danych faktur
+# wprowadzenie danych faktur 
 while True:
     try:
-        invoice_value = int(input("Podaj wartość faktury:\n"))
+        invoice_value = float(input("Podaj wartość faktury:\n"))
         break
     except ValueError:
         print("[BŁĄD] Proszę podać wartość w formacie liczbowym")
@@ -19,19 +19,36 @@ while True:
         continue
 
 while True:
+    while True:
+        try:
+            invoice_date = input("Podaj datę wystawienia (RRRR-MM-DD\n)")
+            datetime.date.fromisoformat(invoice_date)
+            break
+        except ValueError:
+            print("Nieprawidłowy format danych, proszę podać datę w formacie RRRR-MM-DD")
     try:
-        invoice_date = input("Podaj datę wystawienia (RRRR-MM-DD\n)")
-        datetime.date.fromisoformat(invoice_date)
+        # komunikacja z API
+        communication = requests.get(f'http://api.nbp.pl/api/exchangerates/rates/c/{invoice_currency}/{invoice_date}/?format=json')
+        response = communication.json()
+        invoice_exchange_rate = response['rates'][0]['bid']
+        invoice_value_in_PLN = invoice_value * invoice_exchange_rate
         break
     except ValueError:
-        print("Nieprawidłowy format danych, proszę podać datę w formacie RRRR-MM-DD")
+        print("Brak kursu walut dla danego dnia, proszę wprowadzić inną datę.")
 
-invoice = [invoice_value, invoice_currency, invoice_date]
+print(f'Całkowita wartość faktury w PLN: {invoice_value_in_PLN}')
+invoice = [invoice_value, invoice_currency, invoice_exchange_rate, invoice_value_in_PLN, invoice_date]
+
+# zapis faktur do pliku txt
+with open('invoices.txt', 'a', encoding='UTF8') as invoices_file:
+    writer = csv.writer(invoices_file)
+    writer.writerow(invoice)
+    invoices_file.close()
 
 # wprowadzenie danych płatności
 while True:
     try:
-        payment_value = int(input("Podaj wartość płatności:\n"))
+        payment_value = float(input("Podaj wartość płatności:\n"))
         break
     except ValueError:
         print("[BŁĄD]  Proszę podać wartość w formacie liczbowym")
@@ -44,20 +61,24 @@ while True:
         continue
 
 while True:
+    while True:
+        try:
+            payment_date = input("Podaj datę wystawienia (RRRR-MM-DD\n)")
+            datetime.date.fromisoformat(payment_date)
+            break
+        except ValueError:
+            print("Nieprawidłowy format danych, proszę podać datę w formacie RRRR-MM-DD")
     try:
-        payment_date = input("Podaj datę płatności (RRRR-MM-DD\n)")
-        datetime.date.fromisoformat(payment_date)
+        # komunikacja z API
+        communication = requests.get(f'http://api.nbp.pl/api/exchangerates/rates/c/{payment_currency}/{payment_date}/?format=json')
+        response = communication.json()
+        payment_exchange_rate = response['rates'][0]['bid']
+        payment_value_in_PLN = payment_value * payment_exchange_rate
         break
     except ValueError:
-        print("Nieprawidłowy format danych, proszę podać datę w formacie RRRR-MM-DD")
+        print("Brak kursu walut dla danego dnia, proszę wprowadzić inną datę.")
 
-payment = [payment_value, payment_currency, payment_date]
-
-# zapis faktur do pliku txt
-with open('invoices.txt', 'a', encoding='UTF8') as invoices_file:
-    writer = csv.writer(invoices_file)
-    writer.writerow(invoice)
-    invoices_file.close()
+payment = [payment_value, payment_currency, payment_exchange_rate, payment_value_in_PLN, payment_date]
 
 # zapis metody płatności do pliku txt
 with open('payments.txt', 'a', encoding='UTF8') as payment_file:
@@ -65,24 +86,10 @@ with open('payments.txt', 'a', encoding='UTF8') as payment_file:
     writer.writerow(payment)
     payment_file.close()
 
-currency = payment_currency
-quantity = int(invoice_value)
-
-# komunikacja z API
-communication = requests.get(f'http://api.nbp.pl/api/exchangerates/rates/c/{payment_currency}/{payment_date}/?format=json')
-response = communication.json()
-result = response['rates'][0]['bid'] * quantity
-
-# zapis wyniku operacji do pliku txt
-with open('payment_results.txt', 'a', encoding='UTF8') as results_file:
-            writer = csv.writer(results_file)
-            results_file.write(str(result))
-            results_file.close()
-
 # wyświetlenie w terminalu informacji o statusie faktury
-if invoice_value == payment_value:
-    print(f"wartośc faktury wynosi {invoice_value}, czyli {result} w {payment_currency} - stan na dzień {invoice_date} - Faktura została opłacona w całośći")
-elif invoice_value < payment_value:
-    print(f"wartośc faktury wynosi {invoice_value}, czyli {result} w {payment_currency} - stan na dzień {invoice_date} - zapłacone zostało {payment_value} z {invoice_value} wymaganych - nastąpiła nadpłata (wymagany zwrot w kwocie", int(payment_value) - int(invoice_value),")")
+if invoice_value_in_PLN == payment_value_in_PLN:
+    print(f"Wartośc faktury wynosi {invoice_value}{invoice_currency}, czyli {invoice_value_in_PLN}PLN przy kursie {invoice_exchange_rate}.\n Wartośc płatności wynosi {payment_value}{payment_currency}, czyli {payment_value_in_PLN}PLN przy kursie {payment_exchange_rate}.\n Faktura została opłacona w całośCi.")
+elif invoice_value_in_PLN < payment_value_in_PLN:
+    print(f"Wartośc faktury wynosi {invoice_value}{invoice_currency}, czyli {invoice_value_in_PLN}PLN przy kursie {invoice_exchange_rate}.\n Wartośc płatności wynosi {payment_value}{payment_currency}, czyli {payment_value_in_PLN}PLN przy kursie {payment_exchange_rate}.\n Nastąpiła nadpłata, wymagany zwrot w kwocie", (float(payment_value_in_PLN) - float(invoice_value_in_PLN)) / (payment_exchange_rate),f" {payment_currency}.")
 else:
-    print(f"wartośc faktury wynosi {invoice_value}, czyli {result} w {payment_currency} - stan na dzień {invoice_date} - zapłacone zostało {payment_value} z {invoice_value} wymaganych - nastąpiła niedopłata (wymagana dopłata w kwocie", int(invoice_value) - int(invoice_value),")")
+    print(f"Wartośc faktury wynosi {invoice_value}{invoice_currency}, czyli {invoice_value_in_PLN}PLN przy kursie {invoice_exchange_rate}.\n Wartośc płatności wynosi {payment_value}{payment_currency}, czyli {payment_value_in_PLN}PLN przy kursie {payment_exchange_rate}.\n Nastąpiła niedopłata, wymagana dopłata w kwocie", (float(invoice_value_in_PLN) - float(payment_value_in_PLN)) / (payment_exchange_rate),f" {payment_currency}.")
